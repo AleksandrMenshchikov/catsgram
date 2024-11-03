@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.yandex.practicum.catsgram.exception.ConditionsNotMetException;
 import ru.yandex.practicum.catsgram.exception.NotFoundException;
 import ru.yandex.practicum.catsgram.model.Post;
+import ru.yandex.practicum.catsgram.util.Id;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -32,11 +33,11 @@ public class PostController {
         if (post.getDescription() == null || post.getDescription().isBlank()) {
             throw new ConditionsNotMetException("Описание не может быть пустым");
         }
-        // формируем дополнительные данные
-        post.setId(getNextId());
+
+        post.setId(Id.getNextId(posts));
         post.setPostDate(Instant.now());
-        // сохраняем новую публикацию в памяти приложения
         posts.put(post.getId(), post);
+
         return post;
     }
 
@@ -46,6 +47,7 @@ public class PostController {
         if (newPost.getId() == null) {
             throw new ConditionsNotMetException("Id должен быть указан");
         }
+
         if (posts.containsKey(newPost.getId())) {
             Post oldPost = posts.get(newPost.getId());
             if (newPost.getDescription() == null || newPost.getDescription().isBlank()) {
@@ -55,16 +57,7 @@ public class PostController {
             oldPost.setDescription(newPost.getDescription());
             return oldPost;
         }
-        throw new NotFoundException("Пост с id = " + newPost.getId() + " не найден");
-    }
 
-    // вспомогательный метод для генерации идентификатора нового поста
-    private long getNextId() {
-        long currentMaxId = posts.keySet()
-                .stream()
-                .mapToLong(id -> id)
-                .max()
-                .orElse(0);
-        return ++currentMaxId;
+        throw new NotFoundException("Пост с id = " + newPost.getId() + " не найден");
     }
 }
