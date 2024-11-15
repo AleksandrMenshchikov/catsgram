@@ -1,63 +1,57 @@
 package ru.yandex.practicum.catsgram.controller;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import ru.yandex.practicum.catsgram.exception.ConditionsNotMetException;
 import ru.yandex.practicum.catsgram.exception.NotFoundException;
 import ru.yandex.practicum.catsgram.model.Post;
-import ru.yandex.practicum.catsgram.util.Id;
+import ru.yandex.practicum.catsgram.service.PostService;
 
-import java.time.Instant;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Objects;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/posts")
 public class PostController {
+    private enum Sort {
+        ASC,
+        DESC;
+    }
 
-    private final Map<Long, Post> posts = new HashMap<>();
+    private final PostService postService;
 
     @GetMapping
     public Collection<Post> findAll() {
-        return posts.values();
+        return postService.findAll();
     }
 
     @PostMapping
-    public Post create(@RequestBody Post post) {
-        // проверяем выполнение необходимых условий
-        if (post.getDescription() == null || post.getDescription().isBlank()) {
-            throw new ConditionsNotMetException("Описание не может быть пустым");
+    @ResponseStatus(HttpStatus.CREATED)
+    public Post create(@RequestBody Post post,
+                       @RequestParam String sort
+    ) {
+        if (Objects.equals(sort, "asc")) {
+            throw new NotFoundException("wewee");
         }
-
-        post.setId(Id.getNextId(posts));
-        post.setPostDate(Instant.now());
-        posts.put(post.getId(), post);
-
-        return post;
+        return postService.create(post);
     }
 
     @PutMapping
     public Post update(@RequestBody Post newPost) {
-        // проверяем необходимые условия
-        if (newPost.getId() == null) {
-            throw new ConditionsNotMetException("Id должен быть указан");
-        }
+        return postService.update(newPost);
+    }
 
-        if (posts.containsKey(newPost.getId())) {
-            Post oldPost = posts.get(newPost.getId());
-            if (newPost.getDescription() == null || newPost.getDescription().isBlank()) {
-                throw new ConditionsNotMetException("Описание не может быть пустым");
-            }
-            // если публикация найдена и все условия соблюдены, обновляем её содержимое
-            oldPost.setDescription(newPost.getDescription());
-            return oldPost;
-        }
-
-        throw new NotFoundException("Пост с id = " + newPost.getId() + " не найден");
+    @GetMapping("/{id}")
+    public Post getPostById(@PathVariable Long id) {
+        return postService.getPostById(id);
     }
 }
